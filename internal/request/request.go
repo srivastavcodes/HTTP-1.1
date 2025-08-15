@@ -10,7 +10,7 @@ var (
 	ERROR_BAD_START_LINE         = fmt.Errorf("malformed request-line")
 	ERROR_REQUEST_IN_ERROR_STATE = fmt.Errorf("request in error state")
 
-	SEPARATOR = "\r\n"
+	rn = []byte("\r\n")
 )
 
 type parserState string
@@ -39,12 +39,12 @@ func newRequest() *Request {
 }
 
 func parseRequestLine(b []byte) (*RequestLine, int, error) {
-	idx := bytes.Index(b, []byte(SEPARATOR))
+	idx := bytes.Index(b, rn)
 	if idx == -1 {
 		return nil, 0, nil
 	}
 	startLine := b[:idx]
-	read := idx + len(SEPARATOR)
+	read := idx + len(rn)
 
 	parts := bytes.Split(startLine, []byte(" "))
 	if len(parts) != 3 {
@@ -68,9 +68,6 @@ func (req *Request) parse(data []byte) (int, error) {
 outer:
 	for {
 		switch req.state {
-		case StateError:
-			return 0, ERROR_REQUEST_IN_ERROR_STATE
-
 		case StateInit:
 			rl, n, err := parseRequestLine(data[read:])
 			if err != nil {
@@ -83,6 +80,9 @@ outer:
 			req.RequestLine = *rl
 			read += n
 			req.state = StateDone
+
+		case StateError:
+			return 0, ERROR_REQUEST_IN_ERROR_STATE
 
 		case StateDone:
 			break outer
