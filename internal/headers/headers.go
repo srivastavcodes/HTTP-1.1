@@ -3,15 +3,28 @@ package headers
 import (
 	"bytes"
 	"fmt"
+	"strings"
 )
 
-var rn = []byte("\r\n")
+func isToken(str []byte) bool {
+	for _, ch := range str {
+		var is bool
 
-type Headers map[string]string
-
-func NewHeaders() Headers {
-	return make(map[string]string)
+		if ch > 'A' && ch < 'Z' || ch > 'a' && ch < 'z' || ch > '0' && ch < '9' {
+			is = true
+		}
+		switch ch {
+		case '!', '#', '$', '%', '&', '\'', '*', '+', '-', '.', '^', '_', '`', '|', '~':
+			is = true
+		}
+		if !is {
+			return false
+		}
+	}
+	return true
 }
+
+var rn = []byte("\r\n")
 
 func parseHeader(line []byte) (string, string, error) {
 	parts := bytes.SplitN(line, []byte(":"), 2)
@@ -27,7 +40,25 @@ func parseHeader(line []byte) (string, string, error) {
 	return string(name), string(value), nil
 }
 
-func (hdr Headers) Parse(data []byte) (int, bool, error) {
+type Headers struct {
+	headers map[string]string
+}
+
+func NewHeaders() *Headers {
+	return &Headers{
+		headers: make(map[string]string),
+	}
+}
+
+func (hdr *Headers) Get(name string) string {
+	return hdr.headers[strings.ToLower(name)]
+}
+
+func (hdr *Headers) Set(name, value string) {
+	hdr.headers[strings.ToLower(name)] = value
+}
+
+func (hdr *Headers) Parse(data []byte) (int, bool, error) {
 	done, read := false, 0
 	for {
 		idx := bytes.Index(data[read:], rn)
@@ -43,8 +74,11 @@ func (hdr Headers) Parse(data []byte) (int, bool, error) {
 		if err != nil {
 			return 0, false, err
 		}
+		if !isToken([]byte(name)) {
+			return 0, false, fmt.Errorf("malformed header name")
+		}
 		read += idx + len(rn)
-		hdr[name] = value
+		hdr.Set(name, value)
 	}
 	return read, done, nil
 }
