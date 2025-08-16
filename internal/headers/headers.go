@@ -10,7 +10,7 @@ func isToken(str []byte) bool {
 	for _, ch := range str {
 		var is bool
 
-		if ch > 'A' && ch < 'Z' || ch > 'a' && ch < 'z' || ch > '0' && ch < '9' {
+		if ch >= 'A' && ch <= 'Z' || ch >= 'a' && ch <= 'z' || ch >= '0' && ch <= '9' {
 			is = true
 		}
 		switch ch {
@@ -55,7 +55,13 @@ func (hdr *Headers) Get(name string) string {
 }
 
 func (hdr *Headers) Set(name, value string) {
-	hdr.headers[strings.ToLower(name)] = value
+	name = strings.ToLower(name)
+
+	if v, ok := hdr.headers[name]; ok {
+		hdr.headers[name] = fmt.Sprintf("%s, %s", v, value)
+	} else {
+		hdr.headers[name] = value
+	}
 }
 
 func (hdr *Headers) Parse(data []byte) (int, bool, error) {
