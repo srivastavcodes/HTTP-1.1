@@ -18,18 +18,21 @@ func main() {
 		if err != nil {
 			log.Fatal("ERROR: ", err)
 		}
-		rl, err := request.RequestFromReader(conn)
+		req, err := request.RequestFromReader(conn)
 		if err != nil {
 			log.Fatal("ERROR: ", err)
 		}
 		fmt.Printf("Request Line:\n")
-		fmt.Printf("- Method: %s\n", rl.RequestLine.Method)
-		fmt.Printf("- Target: %s\n", rl.RequestLine.RequestTarget)
-		fmt.Printf("- Version: %s\n", rl.RequestLine.HttpVersion)
+		fmt.Printf("- Method: %s\n", req.RequestLine.Method)
+		fmt.Printf("- Target: %s\n", req.RequestLine.RequestTarget)
+		fmt.Printf("- Version: %s\n", req.RequestLine.HttpVersion)
 
 		fmt.Printf("Headers:\n")
-		rl.Headers.ForEach(func(n, v string) {
+		req.Headers.ForEach(func(n, v string) {
 			fmt.Printf("- %s: %s\n", n, v)
 		})
+
+		fmt.Printf("Body:\n")
+		fmt.Printf("%s\n", req.Body)
 	}
 }
