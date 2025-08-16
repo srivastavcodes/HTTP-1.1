@@ -50,8 +50,9 @@ func NewHeaders() *Headers {
 	}
 }
 
-func (hdr *Headers) Get(name string) string {
-	return hdr.headers[strings.ToLower(name)]
+func (hdr *Headers) Get(name string) (string, bool) {
+	str, ok := hdr.headers[strings.ToLower(name)]
+	return str, ok
 }
 
 func (hdr *Headers) Set(name, value string) {

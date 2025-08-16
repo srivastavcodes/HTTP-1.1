@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"strconv"
 	"svr/internal/headers"
 )
 
@@ -19,6 +20,7 @@ type parserState string
 const (
 	StateInit    parserState = "init"
 	StateHeaders parserState = "headers"
+	StateBody    parserState = "body"
 	StateDone    parserState = "done"
 	StateError   parserState = "error"
 )
@@ -31,8 +33,10 @@ type RequestLine struct {
 
 type Request struct {
 	RequestLine RequestLine
-	state       parserState
 	Headers     *headers.Headers
+	Body        string
+
+	state parserState
 }
 
 func newRequest() *Request {
@@ -40,6 +44,18 @@ func newRequest() *Request {
 		state:   StateInit,
 		Headers: headers.NewHeaders(),
 	}
+}
+
+func getInt(headers *headers.Headers, name string, defval int) int {
+	valstr, ok := headers.Get(name)
+	if !ok {
+		return defval
+	}
+	value, err := strconv.Atoi(valstr)
+	if err != nil {
+		return defval
+	}
+	return value
 }
 
 func parseRequestLine(b []byte) (*RequestLine, int, error) {
@@ -67,11 +83,19 @@ func parseRequestLine(b []byte) (*RequestLine, int, error) {
 	return rl, read, nil
 }
 
+func (req *Request) hasBody() bool {
+	length := getInt(req.Headers, "content-length", 0)
+	return length > 0
+}
+
 func (req *Request) parse(data []byte) (int, error) {
 	var read int
 outer:
 	for {
 		currentData := data[read:]
+		if len(currentData) == 0 {
+			break outer
+		}
 		switch req.state {
 
 		case StateInit:
@@ -90,6 +114,7 @@ outer:
 		case StateHeaders:
 			n, done, err := req.Headers.Parse(currentData)
 			if err != nil {
+				req.state = StateError
 				return 0, err
 			}
 			if n == 0 {
@@ -97,6 +122,24 @@ outer:
 			}
 			read += n
 			if done {
+				if req.hasBody() {
+					req.state = StateBody
+				} else {
+					req.state = StateDone
+				}
+			}
+
+		case StateBody:
+			length := getInt(req.Headers, "content-length", 0)
+			if length == 0 {
+				panic("chunked not implemented")
+			}
+			remaining := min(length-len(req.Body), len(currentData))
+
+			req.Body += string(currentData[:remaining])
+			read += remaining
+
+			if len(req.Body) == length {
 				req.state = StateDone
 			}
 
