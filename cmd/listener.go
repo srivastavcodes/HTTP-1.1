@@ -26,5 +26,10 @@ func main() {
 		fmt.Printf("- Method: %s\n", rl.RequestLine.Method)
 		fmt.Printf("- Target: %s\n", rl.RequestLine.RequestTarget)
 		fmt.Printf("- Version: %s\n", rl.RequestLine.HttpVersion)
+
+		fmt.Printf("Headers:\n")
+		rl.Headers.ForEach(func(n, v string) {
+			fmt.Printf("- %s: %s\n", n, v)
+		})
 	}
 }

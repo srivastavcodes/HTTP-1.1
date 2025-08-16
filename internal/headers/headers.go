@@ -64,6 +64,12 @@ func (hdr *Headers) Set(name, value string) {
 	}
 }
 
+func (hdr *Headers) ForEach(cb func(n, v string)) {
+	for n, v := range hdr.headers {
+		cb(n, v)
+	}
+}
+
 func (hdr *Headers) Parse(data []byte) (int, bool, error) {
 	done, read := false, 0
 	for {
