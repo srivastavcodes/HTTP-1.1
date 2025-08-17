@@ -1,6 +1,7 @@
 package response
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -53,7 +54,7 @@ func WriteStatusLine(w io.Writer, code StatusCode) error {
 	case StatusInternalServerError:
 		statusLine = []byte("HTTP/1.1 200 Internal Server Error\r\n")
 	default:
-		return fmt.Errorf("unrecognized status code")
+		return errors.New("unrecognized status code")
 	}
 	_, err := w.Write(statusLine)
 	return err

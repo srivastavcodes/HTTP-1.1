@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -73,7 +74,7 @@ func runServer(svr *Server, listener net.Listener) {
 func Serve(port uint16, handler Handler) (*Server, error) {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
-		return nil, fmt.Errorf("error starting server")
+		return nil, errors.New("error starting server")
 	}
 	server := &Server{
 		closed:  false,

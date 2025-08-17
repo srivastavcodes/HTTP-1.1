@@ -2,15 +2,15 @@ package request
 
 import (
 	"bytes"
-	"fmt"
+	"errors"
 	"io"
 	"strconv"
 	"svr/internal/headers"
 )
 
 var (
-	ERROR_BAD_START_LINE         = fmt.Errorf("malformed request-line")
-	ERROR_REQUEST_IN_ERROR_STATE = fmt.Errorf("request in error state")
+	ERROR_BAD_START_LINE         = errors.New("malformed request-line")
+	ERROR_REQUEST_IN_ERROR_STATE = errors.New("request in error state")
 
 	rn = []byte("\r\n")
 )

@@ -2,6 +2,7 @@ package headers
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -29,13 +30,13 @@ var rn = []byte("\r\n")
 func parseHeader(line []byte) (string, string, error) {
 	parts := bytes.SplitN(line, []byte(":"), 2)
 	if len(parts) != 2 {
-		return "", "", fmt.Errorf("malformed field line")
+		return "", "", errors.New("malformed field line")
 	}
 	name := parts[0]
 	value := bytes.TrimSpace(parts[1])
 
 	if bytes.HasSuffix(name, []byte(" ")) {
-		return "", "", fmt.Errorf("malformed field name")
+		return "", "", errors.New("malformed field name")
 	}
 	return string(name), string(value), nil
 }
@@ -93,7 +94,7 @@ func (hdr *Headers) Parse(data []byte) (int, bool, error) {
 			return 0, false, err
 		}
 		if !isToken([]byte(name)) {
-			return 0, false, fmt.Errorf("malformed header name")
+			return 0, false, errors.New("malformed header name")
 		}
 		read += idx + len(rn)
 		hdr.Set(name, value)
