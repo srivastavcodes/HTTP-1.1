@@ -4,16 +4,23 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"svr/internal/response"
 )
 
 type Server struct {
 	closed bool
 }
 
-func runConnection(svr *Server, conn io.ReadWriteCloser) {
-	out := []byte("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nHello World!`")
-	conn.Write(out)
-	conn.Close()
+func runConnection(_ *Server, conn io.ReadWriteCloser) {
+	defer conn.Close()
+	headers := response.GetDefaultHeaders(0)
+	_ = response.WriteStatusLine(conn, response.StatusOk)
+	_ = response.WriteHeaders(conn, headers)
+}
+
+func (svr *Server) Close() error {
+	svr.closed = true
+	return nil
 }
 
 func runServer(svr *Server, listener net.Listener) {
@@ -39,9 +46,4 @@ func Serve(port uint16) (*Server, error) {
 	}
 	go runServer(server, listener)
 	return server, nil
-}
-
-func (svr *Server) Close() error {
-	svr.closed = true
-	return nil
 }
