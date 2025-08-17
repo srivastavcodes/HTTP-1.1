@@ -1,12 +1,10 @@
 package server
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"net"
-	"strconv"
 	"svr/internal/request"
 	"svr/internal/response"
 )
@@ -16,7 +14,7 @@ type HandlerError struct {
 	Message    string
 }
 
-type Handler func(w io.Writer, req *request.Request) *HandlerError
+type Handler func(w *response.Writer, req *request.Request)
 
 type Server struct {
 	closed  bool
@@ -25,32 +23,14 @@ type Server struct {
 
 func runConnection(svr *Server, conn io.ReadWriteCloser) {
 	defer conn.Close()
-	headers := response.GetDefaultHeaders(0)
+	rw := response.NewWriter(conn)
 
 	req, err := request.RequestFromReader(conn)
 	if err != nil {
-		_ = response.WriteStatusLine(conn, response.StatusBadRequest)
-		_ = response.WriteHeaders(conn, headers)
+		_ = rw.WriteStatusLine(response.StatusBadRequest)
 		return
 	}
-	writer := bytes.NewBuffer(make([]byte, 0))
-
-	var body []byte
-	var code = response.StatusOk
-
-	handlerErr := svr.handler(writer, req)
-	if handlerErr != nil {
-		body = []byte(handlerErr.Message)
-		code = handlerErr.StatusCode
-	} else {
-		body = writer.Bytes()
-	}
-	headers.Replace("Content-Length", strconv.Itoa(len(body)))
-
-	_ = response.WriteStatusLine(conn, code)
-	_ = response.WriteHeaders(conn, headers)
-
-	conn.Write(body)
+	svr.handler(rw, req)
 }
 
 func (svr *Server) Close() error {

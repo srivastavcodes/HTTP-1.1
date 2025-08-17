@@ -1,11 +1,11 @@
 package main
 
 import (
-	"io"
 	"log"
 	"log/slog"
 	"os"
 	"os/signal"
+	"strconv"
 	"svr/internal/request"
 	"svr/internal/response"
 	"svr/internal/server"
@@ -19,22 +19,26 @@ func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
-	svr, err := server.Serve(port, func(w io.Writer, req *request.Request) *server.HandlerError {
+	svr, err := server.Serve(port, func(w *response.Writer, req *request.Request) {
+		body := respond200()
+		code := response.StatusOk
+
+		hdr := response.GetDefaultHeaders(0)
 		switch {
 		case req.RequestLine.RequestTarget == "/yourproblem":
-			return &server.HandlerError{
-				StatusCode: response.StatusBadRequest,
-				Message:    "your problem is not my problem\n",
-			}
+			body = respond400()
+			code = response.StatusBadRequest
+
 		case req.RequestLine.RequestTarget == "/myproblem":
-			return &server.HandlerError{
-				StatusCode: response.StatusInternalServerError,
-				Message:    "Woopsie, my bad\n",
-			}
-		default:
-			w.Write([]byte("All good, frfr\n"))
-			return nil
+			body = respond500()
+			code = response.StatusInternalServerError
 		}
+		hdr.Replace("Content-Length", strconv.Itoa(len(body)))
+		hdr.Replace("Content-Type", "text/html")
+
+		_ = w.WriteStatusLine(code)
+		_ = w.WriteHeaders(hdr)
+		_ = w.WriteBody(body)
 	})
 	if err != nil {
 		log.Fatalf("Error starting server: %v", err)
