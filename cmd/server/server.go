@@ -20,17 +20,18 @@ func main() {
 	slog.SetDefault(logger)
 
 	svr, err := server.Serve(port, func(w io.Writer, req *request.Request) *server.HandlerError {
-		if req.RequestLine.RequestTarget == "/yourproblem" {
+		switch {
+		case req.RequestLine.RequestTarget == "/yourproblem":
 			return &server.HandlerError{
 				StatusCode: response.StatusBadRequest,
 				Message:    "your problem is not my problem\n",
 			}
-		} else if req.RequestLine.RequestTarget == "/myproblem" {
+		case req.RequestLine.RequestTarget == "/myproblem":
 			return &server.HandlerError{
 				StatusCode: response.StatusInternalServerError,
 				Message:    "Woopsie, my bad\n",
 			}
-		} else {
+		default:
 			w.Write([]byte("All good, frfr\n"))
 			return nil
 		}
