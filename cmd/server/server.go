@@ -20,10 +20,11 @@ func main() {
 	slog.SetDefault(logger)
 
 	svr, err := server.Serve(port, func(w *response.Writer, req *request.Request) {
-		body := respond200()
-		code := response.StatusOk
-
 		hdr := response.GetDefaultHeaders(0)
+
+		code := response.StatusOk
+		body := respond200()
+
 		switch {
 		case req.RequestLine.RequestTarget == "/yourproblem":
 			body = respond400()
