@@ -101,5 +101,8 @@ func (w *Writer) WriteBody(b []byte) error {
 		return errors.New("invalid call order - StatusLine -> Header -> Body")
 	}
 	_, err := w.writer.Write(b)
+	if err == nil {
+		w.state = StateHeader
+	}
 	return err
 }
