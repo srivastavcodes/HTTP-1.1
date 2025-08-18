@@ -57,8 +57,11 @@ func (hdr *Headers) Get(name string) (string, bool) {
 }
 
 func (hdr *Headers) Replace(name, value string) {
-	name = strings.ToLower(name)
-	hdr.headers[name] = value
+	hdr.headers[strings.ToLower(name)] = value
+}
+
+func (hdr *Headers) Delete(name string) {
+	delete(hdr.headers, strings.ToLower(name))
 }
 
 func (hdr *Headers) Set(name, value string) {

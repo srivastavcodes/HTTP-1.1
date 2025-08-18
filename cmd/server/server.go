@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"svr/internal/request"
 	"svr/internal/response"
 	"svr/internal/server"
@@ -16,19 +18,12 @@ import (
 
 const port = 7714
 
-func checkErrorPanic(err error, context string) {
-	if err != nil {
-		panic(fmt.Sprintf("%s: %s", context, err))
-	}
-}
-
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
 	svr, err := server.Serve(port, func(w *response.Writer, req *request.Request) {
 		hdr := response.GetDefaultHeaders(0)
-		var err error
 
 		code := response.StatusOk
 		body := respond200()
@@ -41,18 +36,43 @@ func main() {
 		case req.RequestLine.RequestTarget == "/myproblem":
 			body = respond500()
 			code = response.StatusInternalServerError
+
+		case strings.HasPrefix(req.RequestLine.RequestTarget, "/httpbin/stream"):
+			reqTarget := req.RequestLine.RequestTarget
+
+			res, err := http.Get("https://httpbin.org/" + reqTarget[len("/httpbin/"):])
+			if err != nil {
+				body = respond500()
+				code = response.StatusInternalServerError
+				break
+			}
+			_ = w.WriteStatusLine(response.StatusOk)
+
+			hdr.Delete("Content-Length")
+			hdr.Set("Transfer-Encoding", "chunked")
+			hdr.Replace("Content-Type", "text/plain")
+
+			_ = w.WriteHeaders(hdr)
+
+			for {
+				data := make([]byte, 32)
+				n, err := res.Body.Read(data)
+				if err != nil {
+					break
+				}
+				_ = w.WriteBody([]byte(fmt.Sprintf("%x\r\n", n)))
+				_ = w.WriteBody(data[:n])
+				_ = w.WriteBody([]byte("\r\n"))
+			}
+			_ = w.WriteBody([]byte("0\r\n\r\n"))
+			return
 		}
 		hdr.Replace("Content-Length", strconv.Itoa(len(body)))
 		hdr.Replace("Content-Type", "text/html")
 
-		err = w.WriteStatusLine(code)
-		checkErrorPanic(err, "WriteStatusLine blew up")
-
-		err = w.WriteHeaders(hdr)
-		checkErrorPanic(err, "WriteHeaders blew up")
-
-		err = w.WriteBody(body)
-		checkErrorPanic(err, "WriteBody blew up")
+		_ = w.WriteStatusLine(code)
+		_ = w.WriteHeaders(hdr)
+		_ = w.WriteBody(body)
 	})
 	if err != nil {
 		log.Fatalf("Error starting server: %v", err)

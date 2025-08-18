@@ -14,7 +14,6 @@ const (
 	StateStatusLine WriterState = iota
 	StateHeader
 	StateBody
-	StateClosed
 )
 
 type Response struct {
@@ -53,7 +52,7 @@ func NewWriter(writer io.Writer) *Writer {
 
 func (w *Writer) WriteStatusLine(code StatusCode) error {
 	if w.state != StateStatusLine {
-		return errors.New("invalid call order - StatusLine -> Header -> Body")
+		panic("invalid call order - StatusLine -> Header -> Body")
 	}
 	var line []byte
 
@@ -82,7 +81,7 @@ func (w *Writer) WriteStatusLine(code StatusCode) error {
 
 func (w *Writer) WriteHeaders(hdr *headers.Headers) error {
 	if w.state != StateHeader {
-		return errors.New("invalid call order - StatusLine -> Header -> Body")
+		panic("invalid call order - StatusLine -> Header -> Body")
 	}
 	var pair []byte
 	hdr.ForEach(func(n, v string) {
@@ -102,8 +101,5 @@ func (w *Writer) WriteBody(b []byte) error {
 		return errors.New("invalid call order - StatusLine -> Header -> Body")
 	}
 	_, err := w.writer.Write(b)
-	if err == nil {
-		w.state = StateClosed
-	}
 	return err
 }
