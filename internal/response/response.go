@@ -8,6 +8,15 @@ import (
 	"svr/internal/headers"
 )
 
+type WriterState int
+
+const (
+	StateStatusLine WriterState = iota
+	StateHeader
+	StateBody
+	StateClosed
+)
+
 type Response struct {
 }
 
@@ -32,15 +41,20 @@ func GetDefaultHeaders(conLen int) *headers.Headers {
 
 type Writer struct {
 	writer io.Writer
+	state  WriterState
 }
 
 func NewWriter(writer io.Writer) *Writer {
 	return &Writer{
 		writer: writer,
+		state:  StateStatusLine,
 	}
 }
 
 func (w *Writer) WriteStatusLine(code StatusCode) error {
+	if w.state != StateStatusLine {
+		return errors.New("invalid call order - StatusLine -> Header -> Body")
+	}
 	var line []byte
 
 	switch code {
@@ -55,19 +69,21 @@ func (w *Writer) WriteStatusLine(code StatusCode) error {
 
 	case StatusInternalServerError:
 		line = []byte("HTTP/1.1 500 Internal Server Error\r\n")
+
 	default:
 		return errors.New("unrecognized status code")
 	}
 	_, err := w.writer.Write(line)
-	return err
-}
-
-func (w *Writer) WriteBody(b []byte) error {
-	_, err := w.writer.Write(b)
+	if err == nil {
+		w.state = StateHeader
+	}
 	return err
 }
 
 func (w *Writer) WriteHeaders(hdr *headers.Headers) error {
+	if w.state != StateHeader {
+		return errors.New("invalid call order - StatusLine -> Header -> Body")
+	}
 	var pair []byte
 	hdr.ForEach(func(n, v string) {
 		pair = fmt.Appendf(pair, "%s: %s\r\n", n, v)
@@ -75,5 +91,19 @@ func (w *Writer) WriteHeaders(hdr *headers.Headers) error {
 	pair = fmt.Append(pair, "\r\n")
 
 	_, err := w.writer.Write(pair)
+	if err == nil {
+		w.state = StateBody
+	}
+	return err
+}
+
+func (w *Writer) WriteBody(b []byte) error {
+	if w.state != StateBody {
+		return errors.New("invalid call order - StatusLine -> Header -> Body")
+	}
+	_, err := w.writer.Write(b)
+	if err == nil {
+		w.state = StateClosed
+	}
 	return err
 }

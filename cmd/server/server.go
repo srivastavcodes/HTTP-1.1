@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"log/slog"
 	"os"
@@ -21,6 +22,7 @@ func main() {
 
 	svr, err := server.Serve(port, func(w *response.Writer, req *request.Request) {
 		hdr := response.GetDefaultHeaders(0)
+		var err error
 
 		code := response.StatusOk
 		body := respond200()
@@ -37,9 +39,18 @@ func main() {
 		hdr.Replace("Content-Length", strconv.Itoa(len(body)))
 		hdr.Replace("Content-Type", "text/html")
 
-		_ = w.WriteStatusLine(code)
-		_ = w.WriteHeaders(hdr)
-		_ = w.WriteBody(body)
+		err = w.WriteStatusLine(code)
+		if err != nil {
+			panic(fmt.Sprintf("shit blew up: %s", err))
+		}
+		err = w.WriteHeaders(hdr)
+		if err != nil {
+			panic(fmt.Sprintf("shit blew up: %s", err))
+		}
+		err = w.WriteBody(body)
+		if err != nil {
+			panic(fmt.Sprintf("shit blew up: %s", err))
+		}
 	})
 	if err != nil {
 		log.Fatalf("Error starting server: %v", err)
