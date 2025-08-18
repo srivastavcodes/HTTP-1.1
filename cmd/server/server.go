@@ -16,6 +16,12 @@ import (
 
 const port = 7714
 
+func checkErrorPanic(err error, context string) {
+	if err != nil {
+		panic(fmt.Sprintf("%s: %s", context, err))
+	}
+}
+
 func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
@@ -40,17 +46,13 @@ func main() {
 		hdr.Replace("Content-Type", "text/html")
 
 		err = w.WriteStatusLine(code)
-		if err != nil {
-			panic(fmt.Sprintf("shit blew up: %s", err))
-		}
+		checkErrorPanic(err, "WriteStatusLine blew up")
+
 		err = w.WriteHeaders(hdr)
-		if err != nil {
-			panic(fmt.Sprintf("shit blew up: %s", err))
-		}
+		checkErrorPanic(err, "WriteHeaders blew up")
+
 		err = w.WriteBody(body)
-		if err != nil {
-			panic(fmt.Sprintf("shit blew up: %s", err))
-		}
+		checkErrorPanic(err, "WriteBody blew up")
 	})
 	if err != nil {
 		log.Fatalf("Error starting server: %v", err)
