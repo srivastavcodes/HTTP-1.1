@@ -2,7 +2,7 @@
 <module type="WEB_MODULE" version="4">
   <component name="Go" enabled="true">
     <buildTags>
-      <option name="goVersion" value="1.25" />
+      <option name="goVersion" value="1.24" />
     </buildTags>
   </component>
   <component name="NewModuleRootManager">
