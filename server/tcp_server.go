@@ -8,17 +8,17 @@ import (
 	"time"
 )
 
-// TcpServer defines the parameters for running a tcp server. Must be
+// TCPServer defines the parameters for running a tcp server. Must be
 // initialized
-type TcpServer struct {
+type TCPServer struct {
 	Host string
 	Port string
 	log  *log.Logger
 }
 
-func NewTcpServer(host string, port string) *TcpServer {
+func NewTcpServer(host string, port string) *TCPServer {
 	logger := log.New(os.Stdout, "Tcp :: ", log.LstdFlags|log.Lmsgprefix)
-	return &TcpServer{
+	return &TCPServer{
 		Host: host,
 		Port: port,
 		log:  logger,
@@ -26,7 +26,7 @@ func NewTcpServer(host string, port string) *TcpServer {
 }
 
 // ServeTCP starts a new TCP server listening on the configured Host and Port.
-func (s *TcpServer) ServeTCP() error {
+func (s *TCPServer) ServeTCP() error {
 	addr := fmt.Sprintf("%s:%s", s.Host, s.Port)
 
 	listener, err := net.Listen("tcp", addr)
@@ -45,7 +45,9 @@ func (s *TcpServer) ServeTCP() error {
 	}
 }
 
-func (s *TcpServer) handleConnection(conn net.Conn) {
+// handleConnection processes a single TCP client connection. It reads the
+// request data and sends back an echo to the client.
+func (s *TCPServer) handleConnection(conn net.Conn) {
 	defer conn.Close()
 	s.logf("new connection from: %s\n", conn.RemoteAddr().String())
 
@@ -79,11 +81,12 @@ read:
 	s.logf("connection with client=%s closed\n", conn.RemoteAddr().String())
 }
 
-func (s *TcpServer) logf(format string, args ...any) {
+// logf logs defensively
+func (s *TCPServer) logf(format string, args ...any) {
 	if s.log != nil {
 		s.log.Printf(format, args...)
 	} else {
-		logger := log.New(os.Stdout, "TcpServer", log.LstdFlags|log.Lshortfile)
+		logger := log.New(os.Stdout, "TCP :: ", log.LstdFlags|log.Lmsgprefix)
 		logger.Printf(format, args...)
 	}
 }
