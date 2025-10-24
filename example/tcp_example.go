@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	srv := server.NewTcpServer("localhost", "4000")
+	srv := sever.NewTcpServer("localhost", "4000")
 	go func() {
 		sigch := make(chan os.Signal, 1)
 		signal.Notify(sigch, syscall.SIGINT, syscall.SIGTERM)
