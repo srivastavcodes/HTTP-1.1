@@ -1,9 +1,9 @@
-package server
+package response
 
 import (
 	"fmt"
 	"net/http"
-	"sl/server/html"
+	"sl/internal/server/html"
 	"strconv"
 	"time"
 )

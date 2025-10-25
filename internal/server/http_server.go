@@ -6,7 +6,8 @@ import (
 	"log"
 	"net"
 	"os"
-	"sl/server/html"
+	"sl/internal/response"
+	"sl/internal/server/html"
 	"strings"
 	"time"
 )
@@ -91,19 +92,19 @@ func (s *HTTPServer) handleConnection(conn net.Conn) {
 		}
 		s.logf("headers received: %s", strings.TrimSpace(line))
 	}
-	response := []byte(reqLine)
+	res := []byte(reqLine)
 
 	if strings.Contains(path, "hello") {
-		response = SayHello().WriteResponse()
+		res = response.SayHello().WriteResponse()
 	} else {
 		s.sendErrorResponse(conn, 400, "Bad Request")
 	}
-	_, err = conn.Write(response)
+	_, err = conn.Write(res)
 	if err != nil {
-		s.logf("error sending response: %s\n", err)
+		s.logf("error sending res: %s\n", err)
 		return
 	}
-	s.logf("response sent to client %s\n", conn.RemoteAddr().String())
+	s.logf("res sent to client %s\n", conn.RemoteAddr().String())
 }
 
 // TODO: enhance the error handling and html with dynamic data
@@ -111,7 +112,7 @@ func (s *HTTPServer) handleConnection(conn net.Conn) {
 // sendErrorResponse sends an error response back to the client with a html
 // body containing error details.
 func (s *HTTPServer) sendErrorResponse(conn net.Conn, code int, text string) {
-	res := NewHTTPResponse()
+	res := response.NewHTTPResponse()
 
 	res.SetStatus(code, text)
 

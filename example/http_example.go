@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"sl/server"
+	"sl/internal/server"
 	"syscall"
 )
 
